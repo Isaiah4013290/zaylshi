@@ -63,7 +63,7 @@ export function ChatClient({ leagueId, currentUser, initialMessages, isAdmin }: 
             <div className="w-7 h-7 rounded-full bg-[#1f1f1f] flex items-center justify-center text-xs font-bold flex-shrink-0 mt-1">
               {m.users?.username?.[0]?.toUpperCase()}
             </div>
-            <div className={`max-w-[75%] ${m.users?.username === currentUser.username ? 'items-end' : 'items-start'} flex flex-col`}>
+            <div className={`max-w-[75%] flex flex-col ${m.users?.username === currentUser.username ? 'items-end' : 'items-start'}`}>
               <span className="text-xs text-gray-600 mb-1">{m.users?.username}</span>
               <div className={`px-3 py-2 rounded-2xl text-sm ${
                 m.users?.username === currentUser.username

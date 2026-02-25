@@ -15,7 +15,7 @@ interface Props {
 export function AdminActions({ leagueId, league, questions, pendingMembers, approvedMembers, isSuperAdmin }: Props) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
-  const [activeTab, setActiveTab] = useState<'questions' | 'create' | 'members' | 'tokens'>('questions')
+  const [activeTab, setActiveTab] = useState<'questions' | 'create' | 'members' | 'tokens' | 'settings'>('questions')
   const [msg, setMsg] = useState('')
   const [questionText, setQuestionText] = useState('')
   const [optionA, setOptionA] = useState('YES')
@@ -27,6 +27,7 @@ export function AdminActions({ leagueId, league, questions, pendingMembers, appr
   const [editText, setEditText] = useState('')
   const [giveUserId, setGiveUserId] = useState('')
   const [giveAmount, setGiveAmount] = useState(0)
+  const [bio, setBio] = useState(league?.bio ?? '')
   const [copied, setCopied] = useState(false)
 
   const flash = (m: string) => { setMsg(m); setTimeout(() => setMsg(''), 3000) }
@@ -126,18 +127,31 @@ export function AdminActions({ leagueId, league, questions, pendingMembers, appr
     })
   }
 
+  const saveBio = async (e: React.FormEvent) => {
+    e.preventDefault()
+    startTransition(async () => {
+      const res = await fetch(`/api/leagues/${leagueId}/settings`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bio }),
+      })
+      if (res.ok) flash('✅ Bio saved!')
+      else flash('❌ Error saving bio')
+    })
+  }
+
   const tabs = [
     { key: 'questions', label: 'Questions' },
     { key: 'create', label: '+ Create' },
     { key: 'members', label: `Members${pendingMembers.length > 0 ? ` (${pendingMembers.length})` : ''}` },
     { key: 'tokens', label: 'Tokens' },
+    { key: 'settings', label: '⚙️ Bio' },
   ] as const
 
   return (
     <div>
       <h2 className="font-syne text-2xl font-bold mb-4">Admin Panel</h2>
 
-      {/* Join Code */}
       <div className="bg-green-900/20 border border-green-900/40 rounded-2xl p-4 mb-6 flex items-center justify-between">
         <div>
           <p className="text-xs text-gray-500 mb-1">League Join Code</p>
@@ -321,6 +335,33 @@ export function AdminActions({ leagueId, league, questions, pendingMembers, appr
               </div>
               <button type="submit" disabled={isPending} className="btn-primary w-full">
                 {isPending ? 'Sending...' : 'Give Tokens'}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'settings' && (
+        <div className="max-w-lg">
+          <div className="card p-6">
+            <h3 className="font-syne font-bold text-lg mb-4">League Bio</h3>
+            <form onSubmit={saveBio} className="space-y-4">
+              <div>
+                <label className="text-sm text-gray-400 block mb-1.5">
+                  Bio <span className="text-gray-600">(shown on picks page)</span>
+                </label>
+                <textarea
+                  value={bio}
+                  onChange={e => setBio(e.target.value)}
+                  className="input-field resize-none w-full"
+                  rows={4}
+                  placeholder="Welcome to our league! May the best picker win..."
+                  maxLength={500}
+                />
+                <p className="text-xs text-gray-600 mt-1">{bio.length}/500</p>
+              </div>
+              <button type="submit" disabled={isPending} className="btn-primary w-full">
+                {isPending ? 'Saving...' : 'Save Bio'}
               </button>
             </form>
           </div>

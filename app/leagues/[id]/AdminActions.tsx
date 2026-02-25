@@ -129,6 +129,15 @@ export function AdminActions({ leagueId, league, questions, pendingMembers, appr
   return (
     <div>
       <h2 className="font-syne text-2xl font-bold mb-6">Admin Panel</h2>
+
+      <div className="bg-green-900/20 border border-green-900/40 rounded-2xl p-4 mb-6 flex items-center justify-between">
+        <div>
+          <p className="text-xs text-gray-500 mb-1">League Join Code</p>
+          <p className="font-mono font-bold text-2xl text-green-400 tracking-widest">{league?.join_code}</p>
+        </div>
+        <p className="text-xs text-gray-500 max-w-xs text-right">Share this code with people you want to join your league</p>
+      </div>
+
       {msg && <div className="mb-4 px-4 py-2.5 rounded-xl bg-[#1a1a1a] text-sm">{msg}</div>}
 
       <div className="flex gap-2 mb-6 border-b border-[#1f1f1f] pb-4 flex-wrap">

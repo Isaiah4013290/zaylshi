@@ -23,9 +23,9 @@ export default async function AdminPage({ params }: { params: Promise<{ id: stri
 
   const { data: league } = await supabase
     .from('leagues')
-    .select('*')
+    .select('id, name, join_code, join_mode, token_name, token_symbol, starting_tokens, bio')
     .eq('id', id)
-    .single()
+    .maybeSingle()
 
   const { data: questions } = await supabase
     .from('league_questions')
@@ -41,6 +41,8 @@ export default async function AdminPage({ params }: { params: Promise<{ id: stri
 
   const pending = members?.filter(m => m.status === 'pending') ?? []
   const approved = members?.filter(m => m.status === 'approved') ?? []
+
+  if (!league) redirect(`/leagues`)
 
   return (
     <AdminActions

@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
     .select('id')
     .single()
 
-  if (error || !user) return NextResponse.json({ error: 'Failed to create account.' }, { status: 500 })
+  if (error || !user) return NextResponse.json({ error: error?.message ?? 'Unknown error' }, { status: 500 })
 
   await createSession(user.id)
   return NextResponse.json({ success: true })

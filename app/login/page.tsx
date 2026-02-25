@@ -52,7 +52,7 @@ export default function LoginPage() {
             </button>
           </form>
           <p className="text-center text-sm text-gray-500 mt-4">
-            No account? <Link href="/join" className="text-green-500 hover:text-green-400">Request access</Link>
+            No account? <Link href="/join" className="text-green-500 hover:text-green-400">Sign up</Link>
           </p>
         </div>
       </div>

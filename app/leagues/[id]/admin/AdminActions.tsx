@@ -27,8 +27,15 @@ export function AdminActions({ leagueId, league, questions, pendingMembers, appr
   const [editText, setEditText] = useState('')
   const [giveUserId, setGiveUserId] = useState('')
   const [giveAmount, setGiveAmount] = useState(0)
+  const [copied, setCopied] = useState(false)
 
   const flash = (m: string) => { setMsg(m); setTimeout(() => setMsg(''), 3000) }
+
+  const copyCode = () => {
+    navigator.clipboard.writeText(league?.join_code ?? '')
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
 
   const createQuestion = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -128,7 +135,19 @@ export function AdminActions({ leagueId, league, questions, pendingMembers, appr
 
   return (
     <div>
-      <h2 className="font-syne text-2xl font-bold mb-6">Admin Panel</h2>
+      <h2 className="font-syne text-2xl font-bold mb-4">Admin Panel</h2>
+
+      {/* Join Code */}
+      <div className="bg-green-900/20 border border-green-900/40 rounded-2xl p-4 mb-6 flex items-center justify-between">
+        <div>
+          <p className="text-xs text-gray-500 mb-1">League Join Code</p>
+          <p className="font-mono font-bold text-2xl text-green-400 tracking-widest">{league?.join_code}</p>
+        </div>
+        <button onClick={copyCode} className="btn-ghost text-sm px-4 py-2">
+          {copied ? '✅ Copied!' : 'Copy'}
+        </button>
+      </div>
+
       {msg && <div className="mb-4 px-4 py-2.5 rounded-xl bg-[#1a1a1a] text-sm">{msg}</div>}
 
       <div className="flex gap-2 mb-6 border-b border-[#1f1f1f] pb-4 flex-wrap">

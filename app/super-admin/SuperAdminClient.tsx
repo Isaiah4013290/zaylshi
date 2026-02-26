@@ -11,7 +11,7 @@ export function SuperAdminClient({ leagues, users }: { leagues: any[], users: an
     if (!confirm(`Delete "${name}"? This cannot be undone.`)) return
     startTransition(async () => {
       const res = await fetch(`/api/super-admin/delete-league?id=${id}`)
-      if (res.ok || res.redirected) {
+      if (res.ok) {
         setLeagueList(prev => prev.filter(l => l.id !== id))
         setMsg('✅ League deleted!')
         setTimeout(() => setMsg(''), 3000)
@@ -35,20 +35,22 @@ export function SuperAdminClient({ leagues, users }: { leagues: any[], users: an
           <h2 className="font-syne text-xl font-bold mb-4">All Leagues ({leagueList.length})</h2>
           <div className="card overflow-hidden">
             <div className="grid grid-cols-12 px-5 py-3 text-xs text-gray-600 border-b border-[#1f1f1f] uppercase tracking-wider">
-              <div className="col-span-4">Name</div>
-              <div className="col-span-3">Join Mode</div>
-              <div className="col-span-3">Code</div>
+              <div className="col-span-3">Name</div>
+              <div className="col-span-3">Creator</div>
+              <div className="col-span-2">Join Mode</div>
+              <div className="col-span-2">Code</div>
               <div className="col-span-2">Delete</div>
             </div>
             {leagueList.map((league: any) => (
               <div key={league.id} className="grid grid-cols-12 px-5 py-4 border-b border-[#1f1f1f]/40 text-sm hover:bg-white/5 items-center">
-                <div className="col-span-4 font-medium">{league.name}</div>
-                <div className="col-span-3 text-gray-400">{league.join_mode}</div>
-                <div className="col-span-3 font-mono text-green-500 text-xs">{league.join_code}</div>
+                <div className="col-span-3 font-medium">{league.name}</div>
+                <div className="col-span-3 text-gray-400">@{league.creator_username ?? '—'}</div>
+                <div className="col-span-2 text-gray-400">{league.join_mode}</div>
+                <div className="col-span-2 font-mono text-green-500 text-xs">{league.join_code}</div>
                 <div className="col-span-2">
                   <button onClick={() => deleteLeague(league.id, league.name)} disabled={isPending}
                     className="text-xs px-2 py-1 rounded-lg bg-red-900/30 text-red-400 hover:bg-red-900/50">
-                    🗑️
+                    🗑️ Delete
                   </button>
                 </div>
               </div>

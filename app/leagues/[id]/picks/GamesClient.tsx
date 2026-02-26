@@ -1,5 +1,4 @@
 'use client'
-
 import { useState } from 'react'
 import { PickCard } from './PickCard'
 import { ParlayTray, ParlayLeg } from './ParlayTray'
@@ -13,9 +12,10 @@ interface Props {
   tokens: number
   tokenName: string
   tokenSymbol: string
+  bio: string
 }
 
-export function GamesClient({ leagueId, user, open, closed, picksByQuestion, tokens, tokenName, tokenSymbol }: Props) {
+export function GamesClient({ leagueId, user, open, closed, picksByQuestion, tokens, tokenName, tokenSymbol, bio }: Props) {
   const [parlayLegs, setParlayLegs] = useState<ParlayLeg[]>([])
 
   const addToParlay = (leg: ParlayLeg) => {
@@ -33,12 +33,16 @@ export function GamesClient({ leagueId, user, open, closed, picksByQuestion, tok
 
   return (
     <div className="pb-40">
+      {bio && (
+        <div className="card p-4 mb-6 text-sm text-gray-300 border border-[#1f1f1f]">
+          {bio}
+        </div>
+      )}
       <div className="mb-6">
         <p className="text-gray-500 text-sm">
           You have <span className="text-green-400 font-semibold">{tokens} {tokenSymbol} {tokenName}</span> to wager
         </p>
       </div>
-
       {open.length === 0 && closed.length === 0 ? (
         <div className="text-center py-24 card">
           <div className="text-5xl mb-4">🤔</div>
@@ -81,7 +85,6 @@ export function GamesClient({ leagueId, user, open, closed, picksByQuestion, tok
           )}
         </div>
       )}
-
       <ParlayTray legs={parlayLegs} tokens={tokens} tokenSymbol={tokenSymbol}
         leagueId={leagueId} onRemoveLeg={removeFromParlay} onClear={() => setParlayLegs([])} />
     </div>

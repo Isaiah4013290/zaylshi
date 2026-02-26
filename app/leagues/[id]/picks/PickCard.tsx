@@ -42,10 +42,10 @@ export function PickCard({ question, userPick, tokens, tokenSymbol, leagueId, pa
   const handlePick = (pick: 'a' | 'b') => {
     if (locked) return
     setSelectedPick(pick)
-    submitPick(pick, wager)
+    // Don't auto-submit, just select
   }
 
-  const handleWagerSubmit = () => {
+  const handleConfirm = () => {
     if (!selectedPick) { setError('Make a pick first'); return }
     submitPick(selectedPick, wager)
   }
@@ -99,11 +99,15 @@ export function PickCard({ question, userPick, tokens, tokenSymbol, leagueId, pa
           {selectedPick && (
             <div className="flex items-center gap-2 pt-1">
               <span className="text-xs text-gray-500">Wager</span>
-              <input type="number" min={0} max={tokens + (userPick?.wager ?? 0)} value={wager}
+              <input
+                type="number" min={0}
+                max={tokens + (userPick?.wager ?? 0)}
+                value={wager}
                 onChange={e => setWager(Math.min(parseInt(e.target.value) || 0, tokens + (userPick?.wager ?? 0)))}
-                className="w-20 bg-[#1a1a1a] border border-[#1f1f1f] rounded-lg px-2 py-1.5 text-sm text-center focus:outline-none focus:border-green-600" />
+                className="w-20 bg-[#1a1a1a] border border-[#1f1f1f] rounded-lg px-2 py-1.5 text-sm text-center focus:outline-none focus:border-green-600"
+              />
               <span className="text-xs text-gray-500">{tokenSymbol} = win {wager * 2}{tokenSymbol}</span>
-              <button onClick={handleWagerSubmit} disabled={isPending} className="btn-primary text-xs px-3 py-1.5 ml-auto">
+              <button onClick={handleConfirm} disabled={isPending} className="btn-primary text-xs px-3 py-1.5 ml-auto">
                 {isPending ? '...' : 'Confirm'}
               </button>
             </div>

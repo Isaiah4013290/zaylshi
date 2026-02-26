@@ -10,15 +10,11 @@ export async function GET(req: NextRequest) {
   const id = searchParams.get('id')
   if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 })
 
-  await supabase.from('league_parlay_legs').delete().eq('parlay_id', 
-    supabase.from('league_parlays').select('id').eq('league_id', id)
-  )
-  await supabase.from('league_parlays').delete().eq('league_id', id)
   await supabase.from('league_picks').delete().eq('league_id', id)
   await supabase.from('league_questions').delete().eq('league_id', id)
   await supabase.from('league_messages').delete().eq('league_id', id)
   await supabase.from('league_members').delete().eq('league_id', id)
   await supabase.from('leagues').delete().eq('id', id)
 
-  return NextResponse.redirect(new URL('/super-admin', req.url))
+  return NextResponse.json({ success: true })
 }

@@ -15,7 +15,7 @@ interface Props {
 export function AdminActions({ leagueId, league, questions, pendingMembers, approvedMembers, isSuperAdmin }: Props) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
-  const [activeTab, setActiveTab] = useState<'questions' | 'create' | 'members' | 'tokens'>('questions')
+  const [activeTab, setActiveTab] = useState<'questions' | 'create' | 'members' | 'tokens' | 'settings'>('questions')
   const [msg, setMsg] = useState('')
   const [questionText, setQuestionText] = useState('')
   const [optionA, setOptionA] = useState('YES')
@@ -27,8 +27,16 @@ export function AdminActions({ leagueId, league, questions, pendingMembers, appr
   const [editText, setEditText] = useState('')
   const [giveUserId, setGiveUserId] = useState('')
   const [giveAmount, setGiveAmount] = useState(0)
+  const [bio, setBio] = useState(league?.bio ?? '')
+  const [copied, setCopied] = useState(false)
 
   const flash = (m: string) => { setMsg(m); setTimeout(() => setMsg(''), 3000) }
+
+  const copyCode = () => {
+    navigator.clipboard.writeText(league?.join_code ?? '')
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
 
   const createQuestion = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -82,24 +90,27 @@ export function AdminActions({ leagueId, league, questions, pendingMembers, appr
     })
   }
 
-  const approveMember = async (memberId: string) => {
+  const approveMember = async (userId: string) => {
     startTransition(async () => {
       const res = await fetch(`/api/leagues/${leagueId}/members`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ memberId, action: 'approve' }),
+        body: JSON.stringify({ memberId: userId, action: 'approve' }),
       })
       if (res.ok) { flash('✅ Approved!'); router.refresh() }
-      else flash('❌ Error')
+      else {
+        const data = await res.json()
+        flash(`❌ ${data.error ?? 'Error'}`)
+      }
     })
   }
 
-  const denyMember = async (memberId: string) => {
+  const denyMember = async (userId: string) => {
     startTransition(async () => {
       const res = await fetch(`/api/leagues/${leagueId}/members`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ memberId, action: 'deny' }),
+        body: JSON.stringify({ memberId: userId, action: 'deny' }),
       })
       if (res.ok) { flash('Denied.'); router.refresh() }
       else flash('❌ Error')
@@ -119,23 +130,39 @@ export function AdminActions({ leagueId, league, questions, pendingMembers, appr
     })
   }
 
+  const saveBio = async (e: React.FormEvent) => {
+    e.preventDefault()
+    startTransition(async () => {
+      const res = await fetch(`/api/leagues/${leagueId}/settings`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bio }),
+      })
+      if (res.ok) flash('✅ Bio saved!')
+      else flash('❌ Error saving bio')
+    })
+  }
+
   const tabs = [
     { key: 'questions', label: 'Questions' },
     { key: 'create', label: '+ Create' },
     { key: 'members', label: `Members${pendingMembers.length > 0 ? ` (${pendingMembers.length})` : ''}` },
     { key: 'tokens', label: 'Tokens' },
+    { key: 'settings', label: '⚙️ Bio' },
   ] as const
 
   return (
     <div>
-      <h2 className="font-syne text-2xl font-bold mb-6">Admin Panel</h2>
+      <h2 className="font-syne text-2xl font-bold mb-4">Admin Panel</h2>
 
       <div className="bg-green-900/20 border border-green-900/40 rounded-2xl p-4 mb-6 flex items-center justify-between">
         <div>
           <p className="text-xs text-gray-500 mb-1">League Join Code</p>
           <p className="font-mono font-bold text-2xl text-green-400 tracking-widest">{league?.join_code}</p>
         </div>
-        <p className="text-xs text-gray-500 max-w-xs text-right">Share this code with people you want to join your league</p>
+        <button onClick={copyCode} className="btn-ghost text-sm px-4 py-2">
+          {copied ? '✅ Copied!' : 'Copy'}
+        </button>
       </div>
 
       {msg && <div className="mb-4 px-4 py-2.5 rounded-xl bg-[#1a1a1a] text-sm">{msg}</div>}
@@ -258,11 +285,11 @@ export function AdminActions({ leagueId, league, questions, pendingMembers, appr
               <h3 className="font-syne font-bold text-lg mb-3 text-green-400">Pending</h3>
               <div className="space-y-2">
                 {pendingMembers.map(m => (
-                  <div key={m.id} className="card p-4 flex items-center justify-between">
+                  <div key={m.user_id} className="card p-4 flex items-center justify-between">
                     <p className="font-medium">@{m.users?.username}</p>
                     <div className="flex gap-2">
-                      <button onClick={() => approveMember(m.id)} disabled={isPending} className="btn-primary text-xs px-3 py-1.5">Approve</button>
-                      <button onClick={() => denyMember(m.id)} disabled={isPending} className="btn-danger text-xs px-3 py-1.5">Deny</button>
+                      <button onClick={() => approveMember(m.user_id)} disabled={isPending} className="btn-primary text-xs px-3 py-1.5">Approve</button>
+                      <button onClick={() => denyMember(m.user_id)} disabled={isPending} className="btn-danger text-xs px-3 py-1.5">Deny</button>
                     </div>
                   </div>
                 ))}
@@ -273,7 +300,7 @@ export function AdminActions({ leagueId, league, questions, pendingMembers, appr
             <h3 className="font-syne font-bold text-lg mb-3">All Members</h3>
             <div className="card overflow-hidden">
               {approvedMembers.map(m => (
-                <div key={m.id} className="flex items-center justify-between px-4 py-3 border-b border-[#1f1f1f]/40">
+                <div key={m.user_id} className="flex items-center justify-between px-4 py-3 border-b border-[#1f1f1f]/40">
                   <div className="flex items-center gap-2">
                     <span className="font-medium text-sm">@{m.users?.username}</span>
                     <span className={`text-xs px-2 py-0.5 rounded-full ${
@@ -311,6 +338,33 @@ export function AdminActions({ leagueId, league, questions, pendingMembers, appr
               </div>
               <button type="submit" disabled={isPending} className="btn-primary w-full">
                 {isPending ? 'Sending...' : 'Give Tokens'}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'settings' && (
+        <div className="max-w-lg">
+          <div className="card p-6">
+            <h3 className="font-syne font-bold text-lg mb-4">League Bio</h3>
+            <form onSubmit={saveBio} className="space-y-4">
+              <div>
+                <label className="text-sm text-gray-400 block mb-1.5">
+                  Bio <span className="text-gray-600">(shown on picks page)</span>
+                </label>
+                <textarea
+                  value={bio}
+                  onChange={e => setBio(e.target.value)}
+                  className="input-field resize-none w-full"
+                  rows={4}
+                  placeholder="Welcome to our league! May the best picker win..."
+                  maxLength={500}
+                />
+                <p className="text-xs text-gray-600 mt-1">{bio.length}/500</p>
+              </div>
+              <button type="submit" disabled={isPending} className="btn-primary w-full">
+                {isPending ? 'Saving...' : 'Save Bio'}
               </button>
             </form>
           </div>

@@ -11,7 +11,7 @@ export default async function SuperAdminPage() {
 
   const { data: leagues } = await supabase
     .from('leagues')
-    .select('id, name, join_code, join_mode, created_by')
+    .select('id, name, join_code, join_mode, created_by, users(username)')
     .order('created_at', { ascending: false })
 
   const { data: users } = await supabase
@@ -19,5 +19,10 @@ export default async function SuperAdminPage() {
     .select('id, username, status, is_admin, is_super_admin, created_at')
     .order('created_at', { ascending: false })
 
-  return <SuperAdminClient leagues={leagues ?? []} users={users ?? []} />
+  const leaguesWithCreator = leagues?.map((l: any) => ({
+    ...l,
+    creator_username: l.users?.username
+  })) ?? []
+
+  return <SuperAdminClient leagues={leaguesWithCreator} users={users ?? []} />
 }

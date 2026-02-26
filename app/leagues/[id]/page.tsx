@@ -5,23 +5,25 @@ import { GamesClient } from './picks/GamesClient'
 
 export const dynamic = 'force-dynamic'
 
-export default async function LeaguePage({
-  params,
-}: {
-  params: Promise<{ id: string }>
-}) {
+export default async function LeaguePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const user = await getSessionUser()
   if (!user) redirect('/login')
 
   const { data: membership } = await supabase
     .from('league_members')
-    .select('tokens, role, leagues(token_name, token_symbol)')
+    .select('tokens, role, status')
     .eq('league_id', id)
     .eq('user_id', user.id)
     .maybeSingle()
 
   if (!membership) redirect('/leagues')
+
+  const { data: league } = await supabase
+    .from('leagues')
+    .select('token_name, token_symbol, bio')
+    .eq('id', id)
+    .maybeSingle()
 
   const { data: questions } = await supabase
     .from('league_questions')
@@ -38,9 +40,9 @@ export default async function LeaguePage({
   const picksByQuestion: Record<string, any> = {}
   picks?.forEach(p => { picksByQuestion[p.question_id] = p })
 
-  const open = questions?.filter(q => q.status === 'open') ?? []
-  const closed = questions?.filter(q => q.status !== 'open') ?? []
-  const league = membership.leagues as any
+  const now = new Date()
+  const open = questions?.filter(q => q.status === 'open' && new Date(q.closes_at) > now) ?? []
+  const closed = questions?.filter(q => q.status !== 'open' || new Date(q.closes_at) <= now) ?? []
 
   return (
     <GamesClient
@@ -50,8 +52,9 @@ export default async function LeaguePage({
       closed={closed}
       picksByQuestion={picksByQuestion}
       tokens={membership.tokens}
-      tokenName={league.token_name}
-      tokenSymbol={league.token_symbol}
+      tokenName={league?.token_name ?? 'Tokens'}
+      tokenSymbol={league?.token_symbol ?? '🪙'}
+      bio={league?.bio ?? ''}
     />
   )
 }

@@ -1,26 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { verifyPassword, createSession } from '@/lib/auth'
 import { supabase } from '@/lib/supabase'
-import { createSession, verifyPassword } from '@/lib/auth'
 
 export async function POST(req: NextRequest) {
   const { username, password } = await req.json()
 
+  if (!username || !password)
+    return NextResponse.json({ error: 'Username and password required' }, { status: 400 })
+
   const { data: user } = await supabase
     .from('users')
-    .select('id, username, password_hash, status')
-    .eq('username', username.toLowerCase())
+    .select('id, password_hash, status')
+    .eq('username', username)
     .maybeSingle()
 
-  if (!user) return NextResponse.json({ error: 'Username not found.' }, { status: 404 })
-  if (user.status === 'pending') return NextResponse.json({ error: 'Account pending approval.' }, { status: 403 })
-  if (user.status === 'denied') return NextResponse.json({ error: 'Account denied.' }, { status: 403 })
-
-  if (!user.password_hash) {
-    return NextResponse.json({ needsPassword: true, user: user.id })
-  }
+  if (!user)
+    return NextResponse.json({ error: 'Invalid username or password' }, { status: 401 })
 
   const valid = await verifyPassword(password, user.password_hash)
-  if (!valid) return NextResponse.json({ error: 'Incorrect password.' }, { status: 401 })
+  if (!valid)
+    return NextResponse.json({ error: 'Invalid username or password' }, { status: 401 })
+
+  if (user.status !== 'approved')
+    return NextResponse.json({ error: 'Account not approved' }, { status: 403 })
 
   await createSession(user.id)
   return NextResponse.json({ success: true })

@@ -22,19 +22,23 @@ export function PublicQuestionCard({ question, userPick, user, phoneVerified, pu
   const [correctAnswer, setCorrectAnswer] = useState(question.correct_answer)
   const [coinsA, setCoinsA] = useState<number>(question.coins_a ?? 0)
   const [coinsB, setCoinsB] = useState<number>(question.coins_b ?? 0)
-  const [totalCoins, setTotalCoins] = useState<number>(question.total_coins ?? 0)
   const [totalVoters, setTotalVoters] = useState<number>(question.unique_voters ?? 0)
   const [votersA, setVotersA] = useState<number>(question.unique_voters_a ?? 0)
   const [votersB, setVotersB] = useState<number>(question.unique_voters_b ?? 0)
+  const [deleted, setDeleted] = useState(false)
 
   const pctA = totalVoters > 0 ? Math.round((votersA / totalVoters) * 100) : 50
   const pctB = totalVoters > 0 ? Math.round((votersB / totalVoters) * 100) : 50
-
   const totalPot = coinsA + coinsB
-  const multiplierA = coinsA > 0 ? (totalPot / coinsA).toFixed(2) : '—'
-  const multiplierB = coinsB > 0 ? (totalPot / coinsB).toFixed(2) : '—'
-  const payoutA = coinsA > 0 ? Math.floor(100 * (totalPot / coinsA)) : 0
-  const payoutB = coinsB > 0 ? Math.floor(100 * (totalPot / coinsB)) : 0
+
+  const multiplierA = coinsA > 0 ? (totalPot / coinsA).toFixed(2) : null
+  const multiplierB = coinsB > 0 ? (totalPot / coinsB).toFixed(2) : null
+
+  const userWouldWin = wager > 0 && selectedPick === 'a' && coinsA > 0
+    ? Math.floor(wager * (totalPot + wager) / (coinsA + wager))
+    : wager > 0 && selectedPick === 'b' && coinsB > 0
+    ? Math.floor(wager * (totalPot + wager) / (coinsB + wager))
+    : wager > 0 ? wager : 0
 
   const isOwner = user?.id === question.created_by
   const locked = new Date(question.closes_at) <= new Date()
@@ -56,7 +60,6 @@ export function PublicQuestionCard({ question, userPick, user, phoneVerified, pu
       })
       const data = await res.json()
       if (!res.ok) { setError(data.error); return }
-
       if (selectedPick === 'a') {
         setCoinsA((prev: number) => prev + wager)
         setVotersA((prev: number) => prev + 1)
@@ -64,7 +67,6 @@ export function PublicQuestionCard({ question, userPick, user, phoneVerified, pu
         setCoinsB((prev: number) => prev + wager)
         setVotersB((prev: number) => prev + 1)
       }
-      setTotalCoins((prev: number) => prev + wager)
       setTotalVoters((prev: number) => prev + 1)
       onPickMade(question.id, { pick: selectedPick, wager }, publicCoins - wager)
     })
@@ -84,6 +86,20 @@ export function PublicQuestionCard({ question, userPick, user, phoneVerified, pu
       }
     })
   }
+
+  const handleDelete = () => {
+    if (!confirm('Delete this question? This cannot be undone.')) return
+    startTransition(async () => {
+      const res = await fetch('/api/public/questions/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ questionId: question.id }),
+      })
+      if (res.ok) setDeleted(true)
+    })
+  }
+
+  if (deleted) return null
 
   return (
     <div className="card p-6">
@@ -116,31 +132,24 @@ export function PublicQuestionCard({ question, userPick, user, phoneVerified, pu
         </div>
         <div className="flex justify-between text-xs">
           <span className="text-green-500">{pctA}% · {coinsA}🪙</span>
-          <span className="text-gray-600">{totalVoters} voters</span>
+          <span className="text-gray-600">{totalVoters} voters · {totalPot}🪙 pot</span>
           <span className="text-red-500">{coinsB}🪙 · {pctB}%</span>
         </div>
       </div>
 
-      {/* Payout preview */}
+      {/* Multipliers */}
       {!graded && (
-        <div className="bg-[#111] rounded-xl px-4 py-3 mb-4 text-xs">
-          <p className="text-gray-400 font-medium mb-2">💰 Payout Preview</p>
-          <div className="flex justify-between items-center">
-            <div>
-              <p className="text-green-400 font-bold mb-1">{question.option_a}</p>
-              <p className="text-gray-400">{multiplierA}x multiplier</p>
-              <p className="text-gray-600">100🪙 → <span className="text-green-400">{payoutA > 0 ? `${payoutA}🪙` : '—'}</span></p>
-            </div>
-            <div className="text-center">
-              <p className="text-gray-600 text-xs">Total pot</p>
-              <p className="text-white font-bold text-lg">{totalPot}🪙</p>
-              <p className="text-gray-600 text-xs">{totalVoters} voters</p>
-            </div>
-            <div className="text-right">
-              <p className="text-red-400 font-bold mb-1">{question.option_b}</p>
-              <p className="text-gray-400">{multiplierB}x multiplier</p>
-              <p className="text-gray-600"><span className="text-red-400">{payoutB > 0 ? `${payoutB}🪙` : '—'}</span> ← 100🪙</p>
-            </div>
+        <div className="flex justify-between items-center bg-[#111] rounded-xl px-4 py-2.5 mb-4 text-xs">
+          <div className="text-center">
+            <p className="text-gray-500 mb-0.5">{question.option_a}</p>
+            <p className="text-green-400 font-bold text-base">{multiplierA ? `${multiplierA}x` : '—'}</p>
+          </div>
+          <div className="text-center text-gray-600">
+            <p>multiplier</p>
+          </div>
+          <div className="text-center">
+            <p className="text-gray-500 mb-0.5">{question.option_b}</p>
+            <p className="text-red-400 font-bold text-base">{multiplierB ? `${multiplierB}x` : '—'}</p>
           </div>
         </div>
       )}
@@ -170,15 +179,24 @@ export function PublicQuestionCard({ question, userPick, user, phoneVerified, pu
             <p className="text-xs text-gray-600 text-center">You can't bet on your own question</p>
           )}
           {selectedPick && !isOwner && (
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-gray-500">Wager</span>
-              <input type="number" min={0} max={publicCoins} value={wager}
-                onChange={e => setWager(Math.min(parseInt(e.target.value) || 0, publicCoins))}
-                className="w-20 bg-[#1a1a1a] border border-[#1f1f1f] rounded-lg px-2 py-1.5 text-sm text-center focus:outline-none focus:border-green-600" />
-              <span className="text-xs text-gray-500">🪙 of {publicCoins}</span>
-              <button onClick={handleConfirm} disabled={isPending} className="btn-primary text-xs px-3 py-1.5 ml-auto">
-                {isPending ? '...' : 'Confirm'}
-              </button>
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-gray-500">Wager</span>
+                <input type="number" min={0} max={publicCoins} value={wager}
+                  onChange={e => setWager(Math.min(parseInt(e.target.value) || 0, publicCoins))}
+                  className="w-20 bg-[#1a1a1a] border border-[#1f1f1f] rounded-lg px-2 py-1.5 text-sm text-center focus:outline-none focus:border-green-600" />
+                <span className="text-xs text-gray-500">🪙 of {publicCoins}</span>
+                <button onClick={handleConfirm} disabled={isPending} className="btn-primary text-xs px-3 py-1.5 ml-auto">
+                  {isPending ? '...' : 'Confirm'}
+                </button>
+              </div>
+              {wager > 0 && (
+                <div className="bg-[#111] rounded-lg px-3 py-2 text-xs flex justify-between items-center">
+                  <span className="text-gray-500">You put in <span className="text-white font-bold">{wager}🪙</span></span>
+                  <span className="text-gray-600">→</span>
+                  <span className="text-gray-500">Win <span className="text-green-400 font-bold">{userWouldWin}🪙</span> if correct</span>
+                </div>
+              )}
             </div>
           )}
           {error && <p className="text-red-400 text-xs">{error}</p>}
@@ -202,25 +220,33 @@ export function PublicQuestionCard({ question, userPick, user, phoneVerified, pu
         </div>
       )}
 
-      {/* Grade button for owner */}
-      {isOwner && !graded && locked && (
-        <div className="mt-3 border-t border-[#1f1f1f] pt-3">
-          {showGrade ? (
-            <div className="flex gap-2">
-              <button onClick={() => handleGrade('a')} disabled={isPending}
-                className="flex-1 py-2 rounded-xl text-sm font-bold bg-green-900/20 border border-green-800/50 text-green-400 hover:bg-green-900/40">
-                ✓ {question.option_a}
-              </button>
-              <button onClick={() => handleGrade('b')} disabled={isPending}
-                className="flex-1 py-2 rounded-xl text-sm font-bold bg-red-900/20 border border-red-800/50 text-red-400 hover:bg-red-900/40">
-                ✓ {question.option_b}
-              </button>
-            </div>
-          ) : (
-            <button onClick={() => setShowGrade(true)} className="btn-primary text-xs w-full">
-              Grade This Question
-            </button>
+      {/* Owner controls */}
+      {isOwner && (
+        <div className="mt-3 border-t border-[#1f1f1f] pt-3 space-y-2">
+          {!graded && locked && (
+            <>
+              {showGrade ? (
+                <div className="flex gap-2">
+                  <button onClick={() => handleGrade('a')} disabled={isPending}
+                    className="flex-1 py-2 rounded-xl text-sm font-bold bg-green-900/20 border border-green-800/50 text-green-400 hover:bg-green-900/40">
+                    ✓ {question.option_a}
+                  </button>
+                  <button onClick={() => handleGrade('b')} disabled={isPending}
+                    className="flex-1 py-2 rounded-xl text-sm font-bold bg-red-900/20 border border-red-800/50 text-red-400 hover:bg-red-900/40">
+                    ✓ {question.option_b}
+                  </button>
+                </div>
+              ) : (
+                <button onClick={() => setShowGrade(true)} className="btn-primary text-xs w-full">
+                  Grade This Question
+                </button>
+              )}
+            </>
           )}
+          <button onClick={handleDelete} disabled={isPending}
+            className="w-full py-2 rounded-xl text-xs text-red-400 border border-red-900/30 hover:bg-red-900/20 transition-all">
+            🗑️ Delete Question
+          </button>
         </div>
       )}
 

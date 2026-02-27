@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { PublicQuestionCard } from './PublicQuestionCard'
 import { CreateQuestionModal } from './CreateQuestionModal'
 import { VerifyPhoneModal } from './VerifyPhoneModal'
+import { PublicChat } from './PublicChat'
 import Link from 'next/link'
 
 interface Props {
@@ -107,6 +108,8 @@ export function PublicFeed({ questions, picksByQuestion, user, phoneVerified, pu
           ))}
         </div>
       )}
+
+      <PublicChat user={user} />
 
       {showCreate && (
         <CreateQuestionModal

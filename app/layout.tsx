@@ -3,7 +3,7 @@ import './globals.css'
 import { Nav } from '@/components/Nav'
 
 export const metadata: Metadata = {
-  title: 'Pick\'em',
+  title: 'zPickem',
   description: 'Predict. Compete. Win.',
 }
 

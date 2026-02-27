@@ -13,6 +13,9 @@ export async function Nav() {
         <div className="flex items-center gap-4">
           {user ? (
             <>
+              <Link href="/public" className="text-sm text-gray-400 hover:text-white transition-colors">
+                Public
+              </Link>
               <Link href="/leagues" className="text-sm text-gray-400 hover:text-white transition-colors">
                 Leagues
               </Link>
@@ -30,6 +33,9 @@ export async function Nav() {
             </>
           ) : (
             <>
+              <Link href="/public" className="text-sm text-gray-400 hover:text-white transition-colors">
+                Public
+              </Link>
               <Link href="/login" className="text-sm text-gray-400 hover:text-white transition-colors">
                 Login
               </Link>

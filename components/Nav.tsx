@@ -24,7 +24,9 @@ export async function Nav() {
                   Super Admin
                 </Link>
               )}
-              <span className="text-sm text-gray-500">@{user.username}</span>
+              <Link href="/profile" className="text-sm text-gray-500 hover:text-white transition-colors">
+                @{user.username}
+              </Link>
               <form action="/api/auth/logout" method="POST">
                 <button type="submit" className="text-sm text-gray-500 hover:text-white transition-colors">
                   Out

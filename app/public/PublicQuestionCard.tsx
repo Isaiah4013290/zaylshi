@@ -15,17 +15,17 @@ interface Props {
 export function PublicQuestionCard({ question, userPick, user, phoneVerified, publicCoins, onPickMade, onVerifyNeeded }: Props) {
   const [isPending, startTransition] = useTransition()
   const [selectedPick, setSelectedPick] = useState<'a' | 'b' | null>(userPick?.pick ?? null)
-  const [wager, setWager] = useState(0)
+  const [wager, setWager] = useState<number>(0)
   const [error, setError] = useState('')
   const [showGrade, setShowGrade] = useState(false)
   const [graded, setGraded] = useState(question.status === 'graded')
   const [correctAnswer, setCorrectAnswer] = useState(question.correct_answer)
-  const [coinsA, setCoinsA] = useState(question.coins_a ?? 0)
-  const [coinsB, setCoinsB] = useState(question.coins_b ?? 0)
-  const [totalCoins, setTotalCoins] = useState(question.total_coins ?? 0)
-  const [totalVoters, setTotalVoters] = useState(question.unique_voters ?? 0)
-  const [votersA, setVotersA] = useState(question.unique_voters_a ?? 0)
-  const [votersB, setVotersB] = useState(question.unique_voters_b ?? 0)
+  const [coinsA, setCoinsA] = useState<number>(question.coins_a ?? 0)
+  const [coinsB, setCoinsB] = useState<number>(question.coins_b ?? 0)
+  const [totalCoins, setTotalCoins] = useState<number>(question.total_coins ?? 0)
+  const [totalVoters, setTotalVoters] = useState<number>(question.unique_voters ?? 0)
+  const [votersA, setVotersA] = useState<number>(question.unique_voters_a ?? 0)
+  const [votersB, setVotersB] = useState<number>(question.unique_voters_b ?? 0)
 
   const pctA = totalVoters > 0 ? Math.round((votersA / totalVoters) * 100) : 50
   const pctB = totalVoters > 0 ? Math.round((votersB / totalVoters) * 100) : 50
@@ -58,14 +58,14 @@ export function PublicQuestionCard({ question, userPick, user, phoneVerified, pu
       if (!res.ok) { setError(data.error); return }
 
       if (selectedPick === 'a') {
-        setCoinsA(prev => prev + wager)
-        setVotersA(prev => prev + 1)
+        setCoinsA((prev: number) => prev + wager)
+        setVotersA((prev: number) => prev + 1)
       } else {
-        setCoinsB(prev => prev + wager)
-        setVotersB(prev => prev + 1)
+        setCoinsB((prev: number) => prev + wager)
+        setVotersB((prev: number) => prev + 1)
       }
-      setTotalCoins(prev => prev + wager)
-      setTotalVoters(prev => prev + 1)
+      setTotalCoins((prev: number) => prev + wager)
+      setTotalVoters((prev: number) => prev + 1)
       onPickMade(question.id, { pick: selectedPick, wager }, publicCoins - wager)
     })
   }
@@ -84,8 +84,6 @@ export function PublicQuestionCard({ question, userPick, user, phoneVerified, pu
       }
     })
   }
-
-  const handleParlayPick = (pick: 'a' | 'b') => {}
 
   return (
     <div className="card p-6">

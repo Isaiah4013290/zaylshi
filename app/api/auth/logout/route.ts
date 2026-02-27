@@ -3,5 +3,5 @@ import { clearSession } from '@/lib/auth'
 
 export async function POST() {
   await clearSession()
-  return NextResponse.json({ success: true })
+  return NextResponse.redirect(new URL('/', process.env.NEXT_PUBLIC_APP_URL ?? 'https://zaylshi.vercel.app'))
 }

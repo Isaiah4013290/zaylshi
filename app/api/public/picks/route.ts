@@ -18,6 +18,9 @@ export async function POST(req: NextRequest) {
   const { questionId, pick, wager } = await req.json()
   const wagerNum = parseInt(wager) || 0
 
+  if (wagerNum < 5)
+    return NextResponse.json({ error: 'Minimum wager is 5🪙' }, { status: 400 })
+
   const { data: question } = await supabase
     .from('public_questions')
     .select('*')
@@ -26,10 +29,13 @@ export async function POST(req: NextRequest) {
 
   if (!question || question.status !== 'open')
     return NextResponse.json({ error: 'Question not open' }, { status: 400 })
+
   if (new Date(question.closes_at) <= new Date())
     return NextResponse.json({ error: 'Question closed' }, { status: 400 })
+
   if (question.created_by === user.id)
     return NextResponse.json({ error: "Can't bet on your own question" }, { status: 400 })
+
   if (wagerNum > userData.public_coins)
     return NextResponse.json({ error: 'Not enough coins' }, { status: 400 })
 
@@ -59,6 +65,8 @@ export async function POST(req: NextRequest) {
     unique_voters_a: pick === 'a' ? question.unique_voters_a + 1 : question.unique_voters_a,
     unique_voters_b: pick === 'b' ? question.unique_voters_b + 1 : question.unique_voters_b,
     total_coins: question.total_coins + wagerNum,
+    coins_a: pick === 'a' ? (question.coins_a ?? 0) + wagerNum : (question.coins_a ?? 0),
+    coins_b: pick === 'b' ? (question.coins_b ?? 0) + wagerNum : (question.coins_b ?? 0),
   }).eq('id', questionId)
 
   return NextResponse.json({ success: true })

@@ -20,10 +20,21 @@ export function PublicQuestionCard({ question, userPick, user, phoneVerified, pu
   const [showGrade, setShowGrade] = useState(false)
   const [graded, setGraded] = useState(question.status === 'graded')
   const [correctAnswer, setCorrectAnswer] = useState(question.correct_answer)
+  const [coinsA, setCoinsA] = useState(question.coins_a ?? 0)
+  const [coinsB, setCoinsB] = useState(question.coins_b ?? 0)
+  const [totalCoins, setTotalCoins] = useState(question.total_coins ?? 0)
+  const [totalVoters, setTotalVoters] = useState(question.unique_voters ?? 0)
+  const [votersA, setVotersA] = useState(question.unique_voters_a ?? 0)
+  const [votersB, setVotersB] = useState(question.unique_voters_b ?? 0)
 
-  const totalVoters = question.unique_voters || 0
-  const pctA = totalVoters > 0 ? Math.round((question.unique_voters_a / totalVoters) * 100) : 50
-  const pctB = totalVoters > 0 ? Math.round((question.unique_voters_b / totalVoters) * 100) : 50
+  const pctA = totalVoters > 0 ? Math.round((votersA / totalVoters) * 100) : 50
+  const pctB = totalVoters > 0 ? Math.round((votersB / totalVoters) * 100) : 50
+
+  const totalPot = coinsA + coinsB
+  const multiplierA = coinsA > 0 ? (totalPot / coinsA).toFixed(2) : '—'
+  const multiplierB = coinsB > 0 ? (totalPot / coinsB).toFixed(2) : '—'
+  const payoutA = coinsA > 0 ? Math.floor(100 * (totalPot / coinsA)) : 0
+  const payoutB = coinsB > 0 ? Math.floor(100 * (totalPot / coinsB)) : 0
 
   const isOwner = user?.id === question.created_by
   const locked = new Date(question.closes_at) <= new Date()
@@ -45,6 +56,16 @@ export function PublicQuestionCard({ question, userPick, user, phoneVerified, pu
       })
       const data = await res.json()
       if (!res.ok) { setError(data.error); return }
+
+      if (selectedPick === 'a') {
+        setCoinsA(prev => prev + wager)
+        setVotersA(prev => prev + 1)
+      } else {
+        setCoinsB(prev => prev + wager)
+        setVotersB(prev => prev + 1)
+      }
+      setTotalCoins(prev => prev + wager)
+      setTotalVoters(prev => prev + 1)
       onPickMade(question.id, { pick: selectedPick, wager }, publicCoins - wager)
     })
   }
@@ -64,8 +85,11 @@ export function PublicQuestionCard({ question, userPick, user, phoneVerified, pu
     })
   }
 
+  const handleParlayPick = (pick: 'a' | 'b') => {}
+
   return (
     <div className="card p-6">
+      {/* Header */}
       <div className="flex items-start justify-between gap-3 mb-3">
         <div>
           <p className="font-syne font-bold text-lg leading-snug">{question.question}</p>
@@ -84,15 +108,44 @@ export function PublicQuestionCard({ question, userPick, user, phoneVerified, pu
 
       {/* % bars */}
       <div className="mb-4">
-        <div className="flex justify-between text-xs text-gray-500 mb-1">
-          <span>{question.option_a} — {pctA}%</span>
-          <span>{pctB}% — {question.option_b}</span>
+        <div className="flex justify-between text-xs mb-1">
+          <span className="text-green-400 font-medium">{question.option_a}</span>
+          <span className="text-red-400 font-medium">{question.option_b}</span>
         </div>
-        <div className="h-2 rounded-full bg-[#1f1f1f] overflow-hidden flex">
+        <div className="h-2 rounded-full bg-[#1f1f1f] overflow-hidden flex mb-2">
           <div className="bg-green-600 h-full transition-all" style={{ width: `${pctA}%` }} />
           <div className="bg-red-600 h-full transition-all" style={{ width: `${pctB}%` }} />
         </div>
+        <div className="flex justify-between text-xs">
+          <span className="text-green-500">{pctA}% · {coinsA}🪙</span>
+          <span className="text-gray-600">{totalVoters} voters</span>
+          <span className="text-red-500">{coinsB}🪙 · {pctB}%</span>
+        </div>
       </div>
+
+      {/* Payout preview */}
+      {!graded && (
+        <div className="bg-[#111] rounded-xl px-4 py-3 mb-4 text-xs">
+          <p className="text-gray-400 font-medium mb-2">💰 Payout Preview</p>
+          <div className="flex justify-between items-center">
+            <div>
+              <p className="text-green-400 font-bold mb-1">{question.option_a}</p>
+              <p className="text-gray-400">{multiplierA}x multiplier</p>
+              <p className="text-gray-600">100🪙 → <span className="text-green-400">{payoutA > 0 ? `${payoutA}🪙` : '—'}</span></p>
+            </div>
+            <div className="text-center">
+              <p className="text-gray-600 text-xs">Total pot</p>
+              <p className="text-white font-bold text-lg">{totalPot}🪙</p>
+              <p className="text-gray-600 text-xs">{totalVoters} voters</p>
+            </div>
+            <div className="text-right">
+              <p className="text-red-400 font-bold mb-1">{question.option_b}</p>
+              <p className="text-gray-400">{multiplierB}x multiplier</p>
+              <p className="text-gray-600"><span className="text-red-400">{payoutB > 0 ? `${payoutB}🪙` : '—'}</span> ← 100🪙</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Pick buttons */}
       {!graded && !locked && !userPick && (

@@ -30,6 +30,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Max 10 questions per day' }, { status: 400 })
 
   const { question, option_a, option_b, closes_at } = await req.json()
+
   if (!question || !closes_at)
     return NextResponse.json({ error: 'Missing fields' }, { status: 400 })
 
@@ -40,6 +41,8 @@ export async function POST(req: NextRequest) {
     option_b: option_b || 'NO',
     closes_at,
     status: 'open',
+    coins_a: 0,
+    coins_b: 0,
   }).select('id').single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })

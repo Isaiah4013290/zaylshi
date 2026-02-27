@@ -1,39 +1,48 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
 import { hashPassword, createSession } from '@/lib/auth'
+import { supabase } from '@/lib/supabase'
 
 export async function POST(req: NextRequest) {
-  const { username, password } = await req.json()
+  const { username, password, phone } = await req.json()
 
-  if (!username || username.length < 3) {
-    return NextResponse.json({ error: 'Username must be at least 3 characters.' }, { status: 400 })
-  }
-
-  if (!password || password.length < 6) {
-    return NextResponse.json({ error: 'Password must be at least 6 characters.' }, { status: 400 })
-  }
+  if (!username || !password)
+    return NextResponse.json({ error: 'Username and password required' }, { status: 400 })
 
   const { data: existing } = await supabase
     .from('users')
     .select('id')
-    .eq('username', username.toLowerCase())
+    .eq('username', username)
     .maybeSingle()
 
-  if (existing) return NextResponse.json({ error: 'Username already taken.' }, { status: 400 })
+  if (existing)
+    return NextResponse.json({ error: 'Username already taken' }, { status: 400 })
 
-  const hash = await hashPassword(password)
+  if (phone) {
+    const { data: phoneExists } = await supabase
+      .from('users')
+      .select('id')
+      .eq('phone', phone)
+      .maybeSingle()
+    if (phoneExists)
+      return NextResponse.json({ error: 'Phone already in use' }, { status: 400 })
+  }
+
+  const password_hash = await hashPassword(password)
 
   const { data: user, error } = await supabase
     .from('users')
     .insert({
-      username: username.toLowerCase(),
-      password_hash: hash,
+      username,
+      password_hash,
       status: 'approved',
+      phone: phone || null,
+      phone_verified: false,
     })
     .select('id')
     .single()
 
-  if (error || !user) return NextResponse.json({ error: error?.message ?? 'Unknown error' }, { status: 500 })
+  if (error || !user)
+    return NextResponse.json({ error: error?.message ?? 'Failed to create account' }, { status: 500 })
 
   await createSession(user.id)
   return NextResponse.json({ success: true })

@@ -60,14 +60,21 @@ export async function POST(req: NextRequest) {
     lifetime_coins_wagered: (userData.lifetime_coins_wagered ?? 0) + wagerNum,
   }).eq('id', user.id)
 
+  const newCoinsA = pick === 'a' ? (question.coins_a ?? 0) + wagerNum : (question.coins_a ?? 0)
+  const newCoinsB = pick === 'b' ? (question.coins_b ?? 0) + wagerNum : (question.coins_b ?? 0)
+
   await supabase.from('public_questions').update({
     unique_voters: question.unique_voters + 1,
     unique_voters_a: pick === 'a' ? question.unique_voters_a + 1 : question.unique_voters_a,
     unique_voters_b: pick === 'b' ? question.unique_voters_b + 1 : question.unique_voters_b,
     total_coins: question.total_coins + wagerNum,
-    coins_a: pick === 'a' ? (question.coins_a ?? 0) + wagerNum : (question.coins_a ?? 0),
-    coins_b: pick === 'b' ? (question.coins_b ?? 0) + wagerNum : (question.coins_b ?? 0),
+    coins_a: newCoinsA,
+    coins_b: newCoinsB,
   }).eq('id', questionId)
 
-  return NextResponse.json({ success: true })
+  return NextResponse.json({
+    success: true,
+    coins_a: newCoinsA,
+    coins_b: newCoinsB,
+  })
 }

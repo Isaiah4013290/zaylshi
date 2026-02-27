@@ -15,7 +15,7 @@ interface Props {
 export function PublicQuestionCard({ question, userPick, user, phoneVerified, publicCoins, onPickMade, onVerifyNeeded }: Props) {
   const [isPending, startTransition] = useTransition()
   const [selectedPick, setSelectedPick] = useState<'a' | 'b' | null>(userPick?.pick ?? null)
-  const [wager, setWager] = useState<number>(0)
+  const [wager, setWager] = useState<number>(5)
   const [error, setError] = useState('')
   const [showGrade, setShowGrade] = useState(false)
   const [graded, setGraded] = useState(question.status === 'graded')
@@ -52,7 +52,8 @@ export function PublicQuestionCard({ question, userPick, user, phoneVerified, pu
 
   const handleConfirm = () => {
     if (!selectedPick) { setError('Select an option first'); return }
-    if (wager <= 0) { setError('Enter a wager amount'); return }
+    if (wager < 5) { setError('Minimum wager is 5🪙'); return }
+    if (wager > publicCoins) { setError('Not enough coins'); return }
     setError('')
     startTransition(async () => {
       const res = await fetch('/api/public/picks', {
@@ -130,20 +131,14 @@ export function PublicQuestionCard({ question, userPick, user, phoneVerified, pu
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div className="bg-[#111] rounded-xl p-3 border border-green-900/20">
-            <div className="flex justify-between items-center mb-1">
-              <span className="text-green-400 font-bold text-sm">{question.option_a}</span>
-              <span className="text-green-400 font-bold">{pctA}%</span>
-            </div>
-            <p className="text-xs text-gray-500">{coinsA}🪙 wagered</p>
-            <p className="text-xs text-gray-600">{votersA} voters</p>
+            <p className="text-green-400 font-bold text-sm mb-2">{question.option_a}</p>
+            <p className="text-white font-bold text-lg">{coinsA}🪙</p>
+            <p className="text-xs text-gray-600 mt-0.5">{votersA} voters · {pctA}%</p>
           </div>
           <div className="bg-[#111] rounded-xl p-3 border border-red-900/20">
-            <div className="flex justify-between items-center mb-1">
-              <span className="text-red-400 font-bold text-sm">{question.option_b}</span>
-              <span className="text-red-400 font-bold">{pctB}%</span>
-            </div>
-            <p className="text-xs text-gray-500">{coinsB}🪙 wagered</p>
-            <p className="text-xs text-gray-600">{votersB} voters</p>
+            <p className="text-red-400 font-bold text-sm mb-2">{question.option_b}</p>
+            <p className="text-white font-bold text-lg">{coinsB}🪙</p>
+            <p className="text-xs text-gray-600 mt-0.5">{votersB} voters · {pctB}%</p>
           </div>
         </div>
         {totalPot > 0 && (
@@ -184,7 +179,7 @@ export function PublicQuestionCard({ question, userPick, user, phoneVerified, pu
               <div className="flex items-center gap-2">
                 <span className="text-xs text-gray-500">Wager</span>
                 <input
-                  type="number" min={1} max={publicCoins} value={wager}
+                  type="number" min={5} max={publicCoins} value={wager}
                   onChange={e => setWager(Math.min(parseInt(e.target.value) || 0, publicCoins))}
                   className="w-20 bg-[#1a1a1a] border border-[#1f1f1f] rounded-lg px-2 py-1.5 text-sm text-center focus:outline-none focus:border-green-600"
                 />
@@ -193,8 +188,9 @@ export function PublicQuestionCard({ question, userPick, user, phoneVerified, pu
                   {isPending ? '...' : 'Confirm'}
                 </button>
               </div>
+              <p className="text-xs text-gray-600">Minimum wager: 5🪙</p>
 
-              {wager > 0 && (
+              {wager >= 5 && (
                 <div className="bg-[#111] rounded-xl p-3 text-xs space-y-1.5">
                   <div className="flex justify-between text-gray-500">
                     <span>Your wager</span>

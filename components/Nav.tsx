@@ -7,8 +7,8 @@ export async function Nav() {
   return (
     <nav className="border-b border-[#1f1f1f] bg-[#0a0a0a] sticky top-0 z-40">
       <div className="max-w-4xl mx-auto px-4 h-14 flex items-center justify-between">
-        <Link href={user ? '/leagues' : '/'} className="font-syne text-xl font-bold text-green-500">
-          Pick'em
+        <Link href={user ? '/leagues' : '/'} className="font-syne font-bold">
+          <span className="text-green-500 text-2xl">z</span><span className="text-white text-xl">Pickem</span>
         </Link>
         <div className="flex items-center gap-4">
           {user ? (

@@ -27,18 +27,16 @@ export function PublicQuestionCard({ question, userPick, user, phoneVerified, pu
   const [votersB, setVotersB] = useState<number>(question.unique_voters_b ?? 0)
   const [deleted, setDeleted] = useState(false)
 
-  const pctA = totalVoters > 0 ? Math.round((votersA / totalVoters) * 100) : 50
-  const pctB = totalVoters > 0 ? Math.round((votersB / totalVoters) * 100) : 50
   const totalPot = coinsA + coinsB
 
-  const multiplierA = coinsA > 0 ? (totalPot / coinsA).toFixed(2) : null
-  const multiplierB = coinsB > 0 ? (totalPot / coinsB).toFixed(2) : null
+  // Kalshi-style pricing based on voter %
+  const priceA = totalVoters > 0 ? Math.round((votersA / totalVoters) * 100) : 50
+  const priceB = totalVoters > 0 ? Math.round((votersB / totalVoters) * 100) : 50
 
-  const userWouldWin = wager > 0 && selectedPick === 'a' && coinsA > 0
-    ? Math.floor(wager * (totalPot + wager) / (coinsA + wager))
-    : wager > 0 && selectedPick === 'b' && coinsB > 0
-    ? Math.floor(wager * (totalPot + wager) / (coinsB + wager))
-    : wager > 0 ? wager : 0
+  // Pool payout: winners split the loser pool proportionally
+  const payoutIfA = coinsA > 0 ? Math.floor(wager * totalPot / coinsA) : wager
+  const payoutIfB = coinsB > 0 ? Math.floor(wager * totalPot / coinsB) : wager
+  const userPayout = selectedPick === 'a' ? payoutIfA : selectedPick === 'b' ? payoutIfB : 0
 
   const isOwner = user?.id === question.created_by
   const locked = new Date(question.closes_at) <= new Date()
@@ -104,7 +102,7 @@ export function PublicQuestionCard({ question, userPick, user, phoneVerified, pu
   return (
     <div className="card p-6">
       {/* Header */}
-      <div className="flex items-start justify-between gap-3 mb-3">
+      <div className="flex items-start justify-between gap-3 mb-4">
         <div>
           <p className="font-syne font-bold text-lg leading-snug">{question.question}</p>
           <p className="text-xs text-gray-600 mt-1">
@@ -120,36 +118,56 @@ export function PublicQuestionCard({ question, userPick, user, phoneVerified, pu
         </span>
       </div>
 
-      {/* % bars */}
-      <div className="mb-4">
-        <div className="flex justify-between text-xs mb-1">
-          <span className="text-green-400 font-medium">{question.option_a}</span>
-          <span className="text-red-400 font-medium">{question.option_b}</span>
-        </div>
-        <div className="h-2 rounded-full bg-[#1f1f1f] overflow-hidden flex mb-2">
-          <div className="bg-green-600 h-full transition-all" style={{ width: `${pctA}%` }} />
-          <div className="bg-red-600 h-full transition-all" style={{ width: `${pctB}%` }} />
-        </div>
-        <div className="flex justify-between text-xs">
-          <span className="text-green-500">{pctA}% · {coinsA}🪙</span>
-          <span className="text-gray-600">{totalVoters} voters · {totalPot}🪙 pot</span>
-          <span className="text-red-500">{coinsB}🪙 · {pctB}%</span>
-        </div>
-      </div>
-
-      {/* Multipliers */}
+      {/* Kalshi-style price display */}
       {!graded && (
-        <div className="flex justify-between items-center bg-[#111] rounded-xl px-4 py-2.5 mb-4 text-xs">
-          <div className="text-center">
-            <p className="text-gray-500 mb-0.5">{question.option_a}</p>
-            <p className="text-green-400 font-bold text-base">{multiplierA ? `${multiplierA}x` : '—'}</p>
+        <div className="mb-4">
+          <div className="grid grid-cols-2 gap-3 mb-3">
+            {/* YES side */}
+            <div className={`rounded-xl p-3 border-2 transition-all ${
+              selectedPick === 'a'
+                ? 'border-green-500 bg-green-900/20'
+                : 'border-[#1f1f1f] bg-[#111]'
+            }`}>
+              <div className="flex justify-between items-center mb-1">
+                <span className="text-xs text-gray-400">{question.option_a}</span>
+                <span className="text-green-400 font-bold text-lg">{priceA}¢</span>
+              </div>
+              <div className="h-1 rounded-full bg-[#1f1f1f] overflow-hidden">
+                <div className="bg-green-500 h-full" style={{ width: `${priceA}%` }} />
+              </div>
+              <div className="flex justify-between mt-1">
+                <span className="text-xs text-gray-600">{coinsA}🪙 wagered</span>
+                <span className="text-xs text-gray-600">{votersA} voters</span>
+              </div>
+            </div>
+
+            {/* NO side */}
+            <div className={`rounded-xl p-3 border-2 transition-all ${
+              selectedPick === 'b'
+                ? 'border-red-500 bg-red-900/20'
+                : 'border-[#1f1f1f] bg-[#111]'
+            }`}>
+              <div className="flex justify-between items-center mb-1">
+                <span className="text-xs text-gray-400">{question.option_b}</span>
+                <span className="text-red-400 font-bold text-lg">{priceB}¢</span>
+              </div>
+              <div className="h-1 rounded-full bg-[#1f1f1f] overflow-hidden">
+                <div className="bg-red-500 h-full" style={{ width: `${priceB}%` }} />
+              </div>
+              <div className="flex justify-between mt-1">
+                <span className="text-xs text-gray-600">{coinsB}🪙 wagered</span>
+                <span className="text-xs text-gray-600">{votersB} voters</span>
+              </div>
+            </div>
           </div>
-          <div className="text-center text-gray-600">
-            <p>multiplier</p>
-          </div>
-          <div className="text-center">
-            <p className="text-gray-500 mb-0.5">{question.option_b}</p>
-            <p className="text-red-400 font-bold text-base">{multiplierB ? `${multiplierB}x` : '—'}</p>
+
+          {/* Total pot */}
+          <div className="text-center text-xs text-gray-600">
+            {totalPot > 0 ? (
+              <span>🪙 <span className="text-white font-medium">{totalPot}</span> total pot</span>
+            ) : (
+              <span>No bets yet — be the first!</span>
+            )}
           </div>
         </div>
       )}
@@ -164,7 +182,7 @@ export function PublicQuestionCard({ question, userPick, user, phoneVerified, pu
                   ? 'bg-green-600 border-green-500 text-white'
                   : 'bg-green-900/10 border-green-900/30 text-green-400 hover:bg-green-900/20'
               }`}>
-              {selectedPick === 'a' ? '✓ ' : ''}{question.option_a}
+              {selectedPick === 'a' ? '✓ ' : ''}Buy {question.option_a}
             </button>
             <button onClick={() => handlePick('b')} disabled={isPending || isOwner}
               className={`py-3 rounded-xl font-bold text-sm transition-all border-2 ${
@@ -172,12 +190,14 @@ export function PublicQuestionCard({ question, userPick, user, phoneVerified, pu
                   ? 'bg-red-600 border-red-500 text-white'
                   : 'bg-red-900/10 border-red-900/30 text-red-400 hover:bg-red-900/20'
               }`}>
-              {selectedPick === 'b' ? '✓ ' : ''}{question.option_b}
+              {selectedPick === 'b' ? '✓ ' : ''}Buy {question.option_b}
             </button>
           </div>
+
           {isOwner && (
             <p className="text-xs text-gray-600 text-center">You can't bet on your own question</p>
           )}
+
           {selectedPick && !isOwner && (
             <div className="space-y-2">
               <div className="flex items-center gap-2">
@@ -191,10 +211,21 @@ export function PublicQuestionCard({ question, userPick, user, phoneVerified, pu
                 </button>
               </div>
               {wager > 0 && (
-                <div className="bg-[#111] rounded-lg px-3 py-2 text-xs flex justify-between items-center">
-                  <span className="text-gray-500">You put in <span className="text-white font-bold">{wager}🪙</span></span>
-                  <span className="text-gray-600">→</span>
-                  <span className="text-gray-500">Win <span className="text-green-400 font-bold">{userWouldWin}🪙</span> if correct</span>
+                <div className="bg-[#111] rounded-lg px-3 py-2.5 text-xs">
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-500">Avg price</span>
+                    <span className="text-white font-medium">
+                      {selectedPick === 'a' ? `${priceA}¢` : `${priceB}¢`}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center mt-1">
+                    <span className="text-gray-500">You wager</span>
+                    <span className="text-white font-medium">{wager}🪙</span>
+                  </div>
+                  <div className="flex justify-between items-center mt-1 pt-1 border-t border-[#1f1f1f]">
+                    <span className="text-gray-400 font-medium">Potential payout</span>
+                    <span className="text-green-400 font-bold">{userPayout}🪙</span>
+                  </div>
                 </div>
               )}
             </div>
@@ -203,19 +234,35 @@ export function PublicQuestionCard({ question, userPick, user, phoneVerified, pu
         </div>
       )}
 
+      {/* Closed no pick */}
+      {!graded && locked && !userPick && !isOwner && (
+        <div className="rounded-xl px-4 py-3 text-sm text-center bg-[#1a1a1a] text-gray-600">
+          Closed — no pick made
+        </div>
+      )}
+
       {/* User's pick result */}
       {userPick && (
-        <div className={`rounded-xl px-4 py-3 text-sm text-center ${
+        <div className={`rounded-xl px-4 py-3 text-sm ${
           userPick.is_correct === true ? 'bg-green-900/20 border border-green-900/40 text-green-300' :
           userPick.is_correct === false ? 'bg-red-900/20 border border-red-900/40 text-red-300' :
           'bg-[#1a1a1a] text-gray-400'
         }`}>
-          {userPick.is_correct === true && '✅ '}
-          {userPick.is_correct === false && '❌ '}
-          You picked <strong>{userPick.pick === 'a' ? question.option_a : question.option_b}</strong>
-          {userPick.wager > 0 && <span className="ml-2 opacity-70">· {userPick.wager}🪙 wagered</span>}
-          {userPick.payout != null && userPick.payout > 0 && (
-            <span className="ml-2 font-bold text-green-400">+{userPick.payout}🪙</span>
+          <div className="flex justify-between items-center">
+            <span>
+              {userPick.is_correct === true && '✅ '}
+              {userPick.is_correct === false && '❌ '}
+              You picked <strong>{userPick.pick === 'a' ? question.option_a : question.option_b}</strong>
+            </span>
+            {userPick.payout != null && userPick.payout > 0 && (
+              <span className="font-bold text-green-400">+{userPick.payout}🪙</span>
+            )}
+          </div>
+          {userPick.wager > 0 && (
+            <div className="flex justify-between mt-1 text-xs opacity-70">
+              <span>Wagered {userPick.wager}🪙</span>
+              {userPick.is_correct === false && <span>Lost {userPick.wager}🪙</span>}
+            </div>
           )}
         </div>
       )}
